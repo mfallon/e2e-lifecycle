@@ -1,0 +1,19 @@
+{
+  "name": "e2e-lifecycle",
+  "version": "1.0.0",
+  "description": "interative e2e lifecycle",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mfallon/e2e-lifecycle.git"
+  },
+  "author": "mark.fallon@wipro.com",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/mfallon/e2e-lifecycle/issues"
+  },
+  "homepage": "https://github.com/mfallon/e2e-lifecycle#readme"
+}
