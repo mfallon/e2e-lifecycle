@@ -19,7 +19,7 @@ module.exports = function(options) {
       // The bundle's starting point. This file will be
       // included, along with the minimum necessary code
       // from its dependencies
-      entry: './src/js/app.js'
+      entry: `./src/js/${ global.config.inputFile }.js`
     }).then( function ( bundle ) {
 
       // convert to valid es5 code with babel
@@ -39,7 +39,9 @@ module.exports = function(options) {
 
       mkdirp('./dist', function() {
         try {
-          fs.writeFileSync(`./dist/${ global.library }.js`, result, 'utf8')
+          fs.writeFileSync(`./dist/${ global.config.outputFile }.js`, result, 'utf8')
+          fs.createReadStream(`./src/${ global.config.index }.html`)
+            .pipe(fs.createWriteStream(`./dist/${ global.config.index }.html`));
           resolve()
         } catch (e) {
           reject(e)

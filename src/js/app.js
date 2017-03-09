@@ -1,3 +1,4 @@
+/*
 import glob from 'glob';
 
 export default class {
@@ -14,3 +15,4 @@ export default class {
   }
 
 }
+*/

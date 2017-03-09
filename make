@@ -1,8 +1,7 @@
 #!/usr/bin/env node
-
 'use strict'
 
-global.library = 'Greeter'
+global.config = require('./config')
 
 var command = process.argv[2],
     utils   = require('./tasks/_utils'),
