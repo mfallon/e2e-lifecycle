@@ -1,16 +1,16 @@
 (function (global, factory) {
   if (typeof define === "function" && define.amd) {
-    define('App', ['module', 'glob'], factory);
+    define('App', ['exports'], factory);
   } else if (typeof exports !== "undefined") {
-    factory(module, require('glob'));
+    factory(exports);
   } else {
     var mod = {
       exports: {}
     };
-    factory(mod, global.glob);
+    factory(mod.exports);
     global.App = mod.exports;
   }
-})(this, function (module, glob) {
+})(this, function (exports) {
   'use strict';
 
   function _classCallCheck(instance, Constructor) {
@@ -37,39 +37,29 @@
     };
   }();
 
-  console.log(glob);
+  Object.defineProperty(exports, '__esModule', { value: true });
 
-  var app = function () {
-    function app() {
-      _classCallCheck(this, app);
+  var App = function () {
+    function App() {
+      _classCallCheck(this, App);
 
-      this.config = {
-        content: 'json/*.json'
-      };
+      this.content = [];
     }
 
-    _createClass(app, [{
-      key: 'loadFiles',
-      value: function loadFiles() {
-        this.files = glob(this.config.content, {}, this.loaded);
-      }
-    }, {
-      key: 'loaded',
-      value: function loaded() {
-        console.log("Loaded!", this.list);
-      }
-    }, {
+    _createClass(App, [{
       key: 'list',
       get: function get() {
-        return this.files;
+        return this.content;
       },
-      set: function set(files) {
-        this.files = files;
+      set: function set(content) {
+        this.content = content;
       }
     }]);
 
-    return app;
+    return App;
   }();
 
-  module.exports = app;
+  var app = new App();
+
+  exports.app = app;
 });

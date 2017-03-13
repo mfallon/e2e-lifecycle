@@ -1,39 +1,21 @@
-var glob = require('glob');
-// const config = require('../../config');
-
-console.log(glob);
-
-export default class {
+class App {
   constructor() {
-    this.config = {
-      content: 'json/*.json',
-    };
-    // this.files = [];
-    /*
-    const glob = require('glob').Glob;
-    this.files = glob('json/*.json', {}, function(err, files) {
-      return files;
-    });
-    */
+    // TODO:
+    // this should be all the json files 
+    // concatenated and make available to 
+    // this member field
+    // this needs to be done by build package
+    this.content = {};
   }
 
   get list() {
-    return this.files;
+    return this.content;
   }
-  set list(files) {
-    this.files = files;
+  set list(content) {
+    this.content = content;
   }
-
-  loadFiles() {
-    this.files = glob(
-      this.config.content,
-      {},
-      this.loaded
-    );
-  }
-
-  loaded() {
-    console.log("Loaded!", this.list);
-  }
-
 }
+
+// Application Instance
+const app = new App();
+console.log(app);

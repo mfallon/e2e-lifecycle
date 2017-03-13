@@ -2,7 +2,8 @@ var utils = require('./_utils'),
   rollup = require( 'rollup' ),
   mkdirp = require('mkdirp'),
   fs = require('fs'),
-  babel = require('babel-core')
+  babel = require('babel-core'),
+  glob = require('glob')
 
 module.exports = function(options) {
 
@@ -42,6 +43,22 @@ module.exports = function(options) {
           fs.writeFileSync(`./dist/${ global.config.outputFile }.js`, result, 'utf8')
           fs.createReadStream(`./src/${ global.config.index }.html`)
             .pipe(fs.createWriteStream(`./dist/${ global.config.index }.html`));
+          // TODO: need to package up json into app.content.js
+          glob(global.config.contentDir + '/*.json', {}, function (er, files) {
+            if (er) {
+              utils.print(`Error parsing json content`, 'error')
+              return null
+            }
+            let rootNode = '';
+            files.forEach(file => {
+              fs.readFile(file, 'utf8', (err, data) => {
+                rootNode += JSON.stringify(data)
+              })
+            });
+            // TODO: need to setup a global accessible from App
+            utils.print(`writing content to ${ global.config.outputFile }.content.js`, 'cool')
+            fs.writeFileSync(`./dist/${ global.config.outputFile }.content.js`, '', 'utf8')
+          })
           resolve()
         } catch (e) {
           reject(e)
