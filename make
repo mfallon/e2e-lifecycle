@@ -2,6 +2,7 @@
 'use strict'
 
 global.config = require('./config')
+global.library = config.namespace;
 
 var command = process.argv[2],
     utils   = require('./tasks/_utils'),
