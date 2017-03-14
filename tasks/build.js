@@ -128,20 +128,15 @@ module.exports = function(options) {
                 // clip last element which is '_'
                 addr.length = addr.length - 1;
                 let last = null; 
-                addr.forEach((level, parent) => {
-                  if (last === null) {
-                    // has no parent, lives off tree
-                    /*
-                    tree.addChild({
-                      level,
-                      parent
-                    });
-                    */
-                    console.log('top');
+                addr.forEach((pos, level, arr) => {
+                  if (level === arr.length -1) {
+                    // this is the last level
+                    // so insert node data here
                   } else {
-                    console.log('parent:', last, 'level:', level);
+                    // insert child at this level at pos
+                    tree.add({}, pos);
+                    // maybe tree should traverse children with address?
                   }
-                  last = parent;
                 
                   // console.log(index, ':', level);
                   // check whethere a node exists at this tree level
