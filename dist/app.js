@@ -1,16 +1,16 @@
 (function (global, factory) {
   if (typeof define === "function" && define.amd) {
-    define('App', ['exports'], factory);
+    define('App', [], factory);
   } else if (typeof exports !== "undefined") {
-    factory(exports);
+    factory();
   } else {
     var mod = {
       exports: {}
     };
-    factory(mod.exports);
+    factory();
     global.App = mod.exports;
   }
-})(this, function (exports) {
+})(this, function () {
   'use strict';
 
   function _classCallCheck(instance, Constructor) {
@@ -37,13 +37,11 @@
     };
   }();
 
-  Object.defineProperty(exports, '__esModule', { value: true });
-
   var App = function () {
     function App() {
       _classCallCheck(this, App);
 
-      this.content = [];
+      this.content = {};
     }
 
     _createClass(App, [{
@@ -60,6 +58,5 @@
   }();
 
   var app = new App();
-
-  exports.app = app;
+  console.log(app);
 });

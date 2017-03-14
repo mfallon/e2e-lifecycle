@@ -1,9 +1,12 @@
 var utils = require('./_utils'),
   rollup = require( 'rollup' ),
   mkdirp = require('mkdirp'),
-  fs = require('fs'),
   babel = require('babel-core'),
-  glob = require('glob')
+  fs = require('fs')
+  // async = require('async'),
+  // path = require('path'),
+  // minimatch = require('minimatch')
+
 
 module.exports = function(options) {
 
@@ -44,6 +47,7 @@ module.exports = function(options) {
           fs.createReadStream(`./src/${ global.config.index }.html`)
             .pipe(fs.createWriteStream(`./dist/${ global.config.index }.html`));
           // TODO: need to package up json into app.content.js
+          /*
           glob(global.config.contentDir + '/*.json', {}, function (er, files) {
             if (er) {
               utils.print(`Error parsing json content`, 'error')
@@ -59,6 +63,36 @@ module.exports = function(options) {
             utils.print(`writing content to ${ global.config.outputFile }.content.js`, 'cool')
             fs.writeFileSync(`./dist/${ global.config.outputFile }.content.js`, '', 'utf8')
           })
+          */
+
+          // MODULE: read content dir and create a sorted array based on filename convention
+          const content = utils.listFiles(`${ global.config.contentDir }`, false)
+          const contentTree = []
+
+          if (content.length > 0) {
+            // assumes unsorted list
+            content.forEach((file, index) => {
+              // regex match file
+              const match = /(\d_\d_\d_\d)_(\w+)\.(\w+)$/.exec(file)
+              if (match && match.length) {
+                const [ filename, address, contentname, ext] = match
+                // insert into array at it's address
+                const addrParts = /(\d)_(\d)_(\d)_(\d)/.exec(address)
+                if (addrParts && addrParts.length) {
+                  // this should generate an N-level array
+                  const [ l0, l1, l2, l3 ] = addrParts
+                  // populate
+                  contentTree.push({
+                    filename,
+                    address,
+                    contentname,
+                    ext
+                  })
+                }
+              }
+            });
+          }
+          console.log(contentTree)
           resolve()
         } catch (e) {
           reject(e)
