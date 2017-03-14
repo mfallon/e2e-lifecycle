@@ -91,7 +91,7 @@ var spawn = require('child_process').spawn,
       utils.print(`Listing all the files in the folder: ${path}`, 'confirm')
       var files = []
       if (fs.existsSync(path)) {
-        var tmpFiles = fs.readdirSync(path)
+        var tmpFiles = fs.readdirSync(path).sort()
         tmpFiles.forEach((file) => {
           var curPath = path + '/' + file
           files.push(curPath)
@@ -141,6 +141,7 @@ var spawn = require('child_process').spawn,
       }
       console.log(`${color} ${msg} \x1B[39m`)
     }
+
   }
 
 module.exports = utils

@@ -7,6 +7,53 @@ var utils = require('./_utils'),
   // path = require('path'),
   // minimatch = require('minimatch')
 
+// reprent our files in a heirarchical manner
+class Node {
+  constructor(data) {
+    this.data = data;
+    this.parent = null;
+    this.children = [];
+  }
+
+  hasChild(index) {
+    return typeof this.children[index] !== "undefined";
+  }
+
+  addChild(node, index) {
+    this.children[index] = node;
+  }
+}
+
+class Tree {
+  constructor(data) {
+    this.rootNode = new Node(data);
+  }
+
+  add(data, index) {
+    this.rootNode.addChild(new Node(data), index);
+  }
+
+  addChild() {
+    this.rootNode.addChild(new Node(data), ...this.args);
+  }
+
+  remove(data, parent, traversal) {
+  }
+
+  findIndex(arr, data) {
+  }
+
+  traverseDepth(callback) {
+    (function recurse(currNode) {
+      currNode.children.forEach(child => recurse(child));
+      callback(currNode);
+    })(this._root);
+  }
+
+  traverseBreadth(callback) {
+  }
+}
+
 
 module.exports = function(options) {
 
@@ -67,32 +114,50 @@ module.exports = function(options) {
 
           // MODULE: read content dir and create a sorted array based on filename convention
           const content = utils.listFiles(`${ global.config.contentDir }`, false)
-          const contentTree = []
+          const tree = new Tree({
+            name: 'rootNode'
+          });
 
           if (content.length > 0) {
-            // assumes unsorted list
+            // assumes sorted list
             content.forEach((file, index) => {
-              // regex match file
-              const match = /(\d_\d_\d_\d)_(\w+)\.(\w+)$/.exec(file)
-              if (match && match.length) {
-                const [ filename, address, contentname, ext] = match
-                // insert into array at it's address
-                const addrParts = /(\d)_(\d)_(\d)_(\d)/.exec(address)
-                if (addrParts && addrParts.length) {
-                  // this should generate an N-level array
-                  const [ l0, l1, l2, l3 ] = addrParts
-                  // populate
-                  contentTree.push({
-                    filename,
-                    address,
-                    contentname,
-                    ext
-                  })
-                }
+              // get address part of filename
+              let addr = /(?:\d_)+/.exec(file)
+              if (addr && addr.length) {
+                addr = addr.pop().split('_')
+                // clip last element which is '_'
+                addr.length = addr.length - 1;
+                let last = null; 
+                addr.forEach((level, parent) => {
+                  if (last === null) {
+                    // has no parent, lives off tree
+                    /*
+                    tree.addChild({
+                      level,
+                      parent
+                    });
+                    */
+                    console.log('top');
+                  } else {
+                    console.log('parent:', last, 'level:', level);
+                  }
+                  last = parent;
+                
+                  // console.log(index, ':', level);
+                  // check whethere a node exists at this tree level
+                  // in effect asking if a child exists at index
+                  // tree.add({}, index);
+                  /*
+                  tree.add({
+                    name: file
+                  }, level);
+                  */
+                })
               }
             });
           }
-          console.log(contentTree)
+
+          console.log(tree);
           resolve()
         } catch (e) {
           reject(e)
