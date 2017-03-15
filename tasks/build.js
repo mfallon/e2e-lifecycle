@@ -1,4 +1,5 @@
 var utils = require('./_utils'),
+  nodeUtils = require('util'),
   rollup = require( 'rollup' ),
   mkdirp = require('mkdirp'),
   babel = require('babel-core'),
@@ -11,16 +12,20 @@ var utils = require('./_utils'),
 class Node {
   constructor(data) {
     this.data = data;
-    this.parent = null;
     this.children = [];
+  }
+
+  addChild(node, index) {
+    // this would easily overwrite any existing node at index
+    if (this.children[index]) {
+      console.log(`branch already exists at ${index}`);
+    }
+    this.children.push(node);
+    // return this.children[index];
   }
 
   hasChild(index) {
     return typeof this.children[index] !== "undefined";
-  }
-
-  addChild(node, index) {
-    this.children[index] = node;
   }
 }
 
@@ -29,8 +34,23 @@ class Tree {
     this.rootNode = new Node(data);
   }
 
-  add(data, index) {
-    this.rootNode.addChild(new Node(data), index);
+  add(addr, data) {
+    console.log(addr, data);
+    // this.rootNode.addChild(new Node(data), parseInt(addr.shift()));
+    (function recurse(currNode, currAddr) {
+      if (currAddr.length) {
+        // pluck a member off the beginning
+        const currLevel = parseInt(currAddr.shift());
+        console.log(currLevel);
+        const nextNode = !currAddr.length ? new Node(data) : new Node(data);
+        console.log(nodeUtils.inspect(nextNode, {showHidden: false, depth: null}));
+        if(currAddr.length <= 3) return currNode;
+        return recurse(currNode.addChild(currLevel, nextNode), currAddr);
+      } else {
+        return currNode;
+      }
+    })(this.rootNode, addr.slice());
+    // this.rootNode.addChild();
   }
 
   addChild() {
@@ -118,42 +138,47 @@ module.exports = function(options) {
             name: 'rootNode'
           });
 
-          if (content.length > 0) {
-            // assumes sorted list
-            content.forEach((file, index) => {
-              // get address part of filename
-              let addr = /(?:\d_)+/.exec(file)
-              if (addr && addr.length) {
-                addr = addr.pop().split('_')
-                // clip last element which is '_'
-                addr.length = addr.length - 1;
-                let last = null; 
-                addr.forEach((pos, level, arr) => {
-                  if (level === arr.length -1) {
-                    // this is the last level
-                    // so insert node data here
-                  } else {
-                    // insert child at this level at pos
-                    tree.add({}, pos);
-                    // maybe tree should traverse children with address?
-                  }
-                
-                  // console.log(index, ':', level);
-                  // check whethere a node exists at this tree level
-                  // in effect asking if a child exists at index
-                  // tree.add({}, index);
-                  /*
-                  tree.add({
-                    name: file
-                  }, level);
-                  */
-                })
-              }
-            });
-          }
+          // assumes sorted list
+          content.forEach((file, index) => {
+            // get address part of filename - should come from config
+            let rematch = /([\d_]+)(\w+)\.(\w+)/.exec(file)
+            if (rematch && rematch.length === 4) {
+              let [ match, addr, name, ext ] = rematch;
+              // clip last element which is '_'
+              addr = addr.substring(0, addr.length - 1).split('_');
+              tree.add(addr, {
+                match,
+                name, 
+                ext
+              });
+              /*
+              let last = null; 
+              addr.forEach((pos, level, arr) => {
+                if (level === arr.length -1) {
+                  // this is the last level
+                  // so insert node data here
+                } else {
+                  // insert child at this level at pos
+                  tree.add({}, pos);
+                  // maybe tree should traverse children with address?
+                }
+              
+                // console.log(index, ':', level);
+                // check whethere a node exists at this tree level
+                // in effect asking if a child exists at index
+                // tree.add({}, index);
+                tree.add({
+                  name: file
+                }, level);
+              })
+              */
+            } else {
+              console.log(`Error: cannot match file ${file}`);
+            }
 
-          console.log(tree);
-          resolve()
+          });
+          console.log(nodeUtils.inspect(tree, {showHidden: false, depth: null}));
+          resolve();
         } catch (e) {
           reject(e)
         }
