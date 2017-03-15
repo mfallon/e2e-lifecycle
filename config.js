@@ -2,6 +2,10 @@ module.exports = {
   inputFile: 'app',
   outputFile: 'app',
   namespace: 'App',
-  index: 'index',
-  contentDir: './content'
+  indexFile: 'index',
+  contentFile: {
+    dir: './content',
+    delim: '_',
+    regEx: /([\d_]+)(\w+)\.(\w+)/
+  }
 }

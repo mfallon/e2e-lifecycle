@@ -8,7 +8,7 @@ var utils = require('./_utils'),
   // path = require('path'),
   // minimatch = require('minimatch')
 
-// reprent our files in a heirarchical manner
+// represent our files in a heirarchical manner
 class Node {
   constructor(data) {
     this.data = data;
@@ -16,16 +16,25 @@ class Node {
   }
 
   addChild(node, index) {
-    // this would easily overwrite any existing node at index
-    if (this.children[index]) {
-      console.log(`branch already exists at ${index}`);
+    // Only assign child if not exists
+    if (!this.hasChild(index)) {
+      this.children[index] = node;
+    } else {
+      // we have to update data at this node
+      if (!this.children[index].hasData() && node.hasData()) {
+        this.children[index].data = Object.assign(this.children[index].data, node.data);
+      }
     }
-    this.children.push(node);
-    // return this.children[index];
+    // link back up with recurse
+    return this.children[index];
   }
 
   hasChild(index) {
-    return typeof this.children[index] !== "undefined";
+    return typeof this.children[index] !== 'undefined';
+  }
+
+  hasData(node, index) {
+    return Object.keys(this.data).length > 0;
   }
 }
 
@@ -34,43 +43,21 @@ class Tree {
     this.rootNode = new Node(data);
   }
 
+  // create leaf node at specified address 
   add(addr, data) {
-    console.log(addr, data);
-    // this.rootNode.addChild(new Node(data), parseInt(addr.shift()));
     (function recurse(currNode, currAddr) {
       if (currAddr.length) {
-        // pluck a member off the beginning
+        // pluck a member off the beginning of address
         const currLevel = parseInt(currAddr.shift());
-        console.log(currLevel);
-        const nextNode = !currAddr.length ? new Node(data) : new Node(data);
-        console.log(nodeUtils.inspect(nextNode, {showHidden: false, depth: null}));
-        if(currAddr.length <= 3) return currNode;
-        return recurse(currNode.addChild(currLevel, nextNode), currAddr);
+        // if we've reached the leaf, use data
+        const nextNode = !currAddr.length ? new Node(data) : new Node({});
+        // add in and next
+        return recurse(currNode.addChild(nextNode, currLevel), currAddr);
       } else {
+        // get back
         return currNode;
       }
     })(this.rootNode, addr.slice());
-    // this.rootNode.addChild();
-  }
-
-  addChild() {
-    this.rootNode.addChild(new Node(data), ...this.args);
-  }
-
-  remove(data, parent, traversal) {
-  }
-
-  findIndex(arr, data) {
-  }
-
-  traverseDepth(callback) {
-    (function recurse(currNode) {
-      currNode.children.forEach(child => recurse(child));
-      callback(currNode);
-    })(this._root);
-  }
-
-  traverseBreadth(callback) {
   }
 }
 
@@ -110,74 +97,35 @@ module.exports = function(options) {
 
       mkdirp('./dist', function() {
         try {
-          fs.writeFileSync(`./dist/${ global.config.outputFile }.js`, result, 'utf8')
-          fs.createReadStream(`./src/${ global.config.index }.html`)
-            .pipe(fs.createWriteStream(`./dist/${ global.config.index }.html`));
-          // TODO: need to package up json into app.content.js
-          /*
-          glob(global.config.contentDir + '/*.json', {}, function (er, files) {
-            if (er) {
-              utils.print(`Error parsing json content`, 'error')
-              return null
-            }
-            let rootNode = '';
-            files.forEach(file => {
-              fs.readFile(file, 'utf8', (err, data) => {
-                rootNode += JSON.stringify(data)
-              })
-            });
-            // TODO: need to setup a global accessible from App
-            utils.print(`writing content to ${ global.config.outputFile }.content.js`, 'cool')
-            fs.writeFileSync(`./dist/${ global.config.outputFile }.content.js`, '', 'utf8')
-          })
-          */
-
-          // MODULE: read content dir and create a sorted array based on filename convention
-          const content = utils.listFiles(`${ global.config.contentDir }`, false)
+          // read content dir and create a sorted array based on filename convention
+          const { outputFile, indexFile } = global.config;
+          const { dir, delim, regEx } = global.config.contentFile;
           const tree = new Tree({
-            name: 'rootNode'
+            name: 'ROOT'
           });
-
-          // assumes sorted list
+          const content = utils.listFiles(`${ dir }`, false);
+          // iterate over directory files
           content.forEach((file, index) => {
-            // get address part of filename - should come from config
-            let rematch = /([\d_]+)(\w+)\.(\w+)/.exec(file)
+            // get address part of filename
+            const rematch = regEx.exec(file);
             if (rematch && rematch.length === 4) {
               let [ match, addr, name, ext ] = rematch;
-              // clip last element which is '_'
-              addr = addr.substring(0, addr.length - 1).split('_');
+              addr = addr.substring(0, addr.length - 1).split(delim);
               tree.add(addr, {
-                match,
                 name, 
                 ext
               });
-              /*
-              let last = null; 
-              addr.forEach((pos, level, arr) => {
-                if (level === arr.length -1) {
-                  // this is the last level
-                  // so insert node data here
-                } else {
-                  // insert child at this level at pos
-                  tree.add({}, pos);
-                  // maybe tree should traverse children with address?
-                }
-              
-                // console.log(index, ':', level);
-                // check whethere a node exists at this tree level
-                // in effect asking if a child exists at index
-                // tree.add({}, index);
-                tree.add({
-                  name: file
-                }, level);
-              })
-              */
             } else {
-              console.log(`Error: cannot match file ${file}`);
+              utils.print(`Error: cannot match file ${ file }`, 'warning');
             }
-
           });
+
           console.log(nodeUtils.inspect(tree, {showHidden: false, depth: null}));
+
+          fs.writeFileSync(`./dist/${ outputFile }.js`, result, 'utf8')
+          fs.createReadStream(`./src/${ indexFile }.html`)
+            .pipe(fs.createWriteStream(`./dist/${ indexFile }.html`));
+
           resolve();
         } catch (e) {
           reject(e)
