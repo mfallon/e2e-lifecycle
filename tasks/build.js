@@ -1,14 +1,12 @@
-var utils = require('./_utils'),
-  nodeUtils = require('util'),
-  rollup = require( 'rollup' ),
-  mkdirp = require('mkdirp'),
-  babel = require('babel-core'),
-  fs = require('fs')
-  // async = require('async'),
-  // path = require('path'),
-  // minimatch = require('minimatch')
+const utils = require('./_utils');
+const nodeUtils = require('util');
+const rollup = require( 'rollup' );
+const mkdirp = require('mkdirp');
+const babel = require('babel-core');
+const fs = require('fs');
+const marked = require('marked');
 
-// represent our files in a heirarchical manner
+// represent a branch or leaf
 class Node {
   constructor(data) {
     this.data = data;
@@ -33,11 +31,16 @@ class Node {
     return typeof this.children[index] !== 'undefined';
   }
 
+  hasChildren() {
+    return this.children.length > 0;
+  }
+
   hasData(node, index) {
     return Object.keys(this.data).length > 0;
   }
 }
 
+// represent our files in a heirarchical manner
 class Tree {
   constructor(data) {
     this.rootNode = new Node(data);
@@ -59,8 +62,27 @@ class Tree {
       }
     })(this.rootNode, addr.slice());
   }
-}
 
+  // TODO: build a JSON representation of our tree
+  toJSON() {
+    // TODO: strip js objects and represent as JSON
+    return (function recurse(children) {
+      if (children.length) {
+        const currNode = children.shift();
+        console.log(currNode.data);
+        if(currNode.hasChildren()) {
+          if (currNode.children.length) {
+            return recurse(currNode.children);
+          }
+        } else {
+          return JSON.stringify(currNode.data);
+        }
+      } else {
+        return null;
+      }
+    })(this.rootNode.children);
+  }
+}
 
 module.exports = function(options) {
 
@@ -111,6 +133,7 @@ module.exports = function(options) {
             if (rematch && rematch.length === 4) {
               let [ match, addr, name, ext ] = rematch;
               addr = addr.substring(0, addr.length - 1).split(delim);
+              // TODO: read content in file --> marked
               tree.add(addr, {
                 name, 
                 ext
@@ -120,11 +143,14 @@ module.exports = function(options) {
             }
           });
 
-          console.log(nodeUtils.inspect(tree, {showHidden: false, depth: null}));
+          // console.log(nodeUtils.inspect(tree, { depth: null}));
+          console.log(tree.toJSON());
 
-          fs.writeFileSync(`./dist/${ outputFile }.js`, result, 'utf8')
+          fs.writeFileSync(`./dist/${ outputFile }.js`, result, 'utf8');
           fs.createReadStream(`./src/${ indexFile }.html`)
             .pipe(fs.createWriteStream(`./dist/${ indexFile }.html`));
+
+          fs.writeFileSync(`./dist/${ outputFile }.content.js`, JSON.stringify(nodeUtils.inspect(tree, {depth: null})), 'utf8');
 
           resolve();
         } catch (e) {

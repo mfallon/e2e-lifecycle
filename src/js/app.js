@@ -1,3 +1,5 @@
+const content = require('./app.content.js');
+
 class App {
   constructor() {
     // TODO:
