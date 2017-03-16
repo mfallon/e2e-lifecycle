@@ -3,8 +3,8 @@ const content = require('./app.content.js');
 class App {
   constructor() {
     // TODO:
-    // this should be all the json files 
-    // concatenated and make available to 
+    // this should be all the json files
+    // concatenated and make available to
     // this member field
     // this needs to be done by build package
     this.content = {};

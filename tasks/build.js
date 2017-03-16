@@ -38,20 +38,34 @@ class Node {
   hasData(node, index) {
     return Object.keys(this.data).length > 0;
   }
+
+  toJSON() {
+    const { data, children } = this;
+    const json = {
+      data
+    };
+    /*
+    if (this.hasChildren) {
+      json['children'] = this.children;
+    }
+    */
+    return json;
+  }
 }
 
 // represent our files in a heirarchical manner
 class Tree {
   constructor(data) {
     this.rootNode = new Node(data);
+    this.json = {};
   }
 
-  // create leaf node at specified address 
+  // create leaf node at specified address
   add(addr, data) {
     (function recurse(currNode, currAddr) {
       if (currAddr.length) {
         // pluck a member off the beginning of address
-        const currLevel = parseInt(currAddr.shift());
+        const currLevel = parseInt(currAddr.shift(), 10);
         // if we've reached the leaf, use data
         const nextNode = !currAddr.length ? new Node(data) : new Node({});
         // add in and next
@@ -65,7 +79,32 @@ class Tree {
 
   // TODO: build a JSON representation of our tree
   toJSON() {
+    const { data, children } = this.rootNode;
+    const json = {
+      data
+    };
+    if (children.length) {
+      // this will need to iterate at the root's level to retrieve all children
+      json['children'] = (function recurse(children) {
+        // pluck a member from children and pass thru
+        const currNode = children.shift();
+        const { data } = currNode.toJSON();
+        if (currNode.hasChildren()) {
+          return {
+            data,
+            children: recurse(currNode.children)
+          };
+        } else {
+          // get back
+          return {
+            data
+          };
+        }
+      })(this.rootNode.children);
+    }
+    return json;
     // TODO: strip js objects and represent as JSON
+    /*
     return (function recurse(children) {
       if (children.length) {
         const currNode = children.shift();
@@ -81,6 +120,7 @@ class Tree {
         return null;
       }
     })(this.rootNode.children);
+    */
   }
 }
 
@@ -135,7 +175,7 @@ module.exports = function(options) {
               addr = addr.substring(0, addr.length - 1).split(delim);
               // TODO: read content in file --> marked
               tree.add(addr, {
-                name, 
+                name,
                 ext
               });
             } else {
@@ -144,7 +184,7 @@ module.exports = function(options) {
           });
 
           // console.log(nodeUtils.inspect(tree, { depth: null}));
-          console.log(tree.toJSON());
+          utils.print(nodeUtils.inspect(tree.toJSON(), { depth: null }));
 
           fs.writeFileSync(`./dist/${ outputFile }.js`, result, 'utf8');
           fs.createReadStream(`./src/${ indexFile }.html`)
