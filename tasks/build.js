@@ -5,6 +5,7 @@ const mkdirp = require('mkdirp');
 const babel = require('babel-core');
 const fs = require('fs');
 const marked = require('marked');
+// const JSON = require('json-serialize');
 
 // represent a branch or leaf
 class Node {
@@ -38,19 +39,6 @@ class Node {
   hasData(node, index) {
     return Object.keys(this.data).length > 0;
   }
-
-  toJSON() {
-    const { data, children } = this;
-    const json = {
-      data
-    };
-    /*
-    if (this.hasChildren) {
-      json['children'] = this.children;
-    }
-    */
-    return json;
-  }
 }
 
 // represent our files in a heirarchical manner
@@ -77,50 +65,29 @@ class Tree {
     })(this.rootNode, addr.slice());
   }
 
-  // TODO: build a JSON representation of our tree
   toJSON() {
     const { data, children } = this.rootNode;
-    const json = {
+    this.json = {
       data
     };
     if (children.length) {
-      // this will need to iterate at the root's level to retrieve all children
-      json['children'] = (function recurse(children) {
-        // pluck a member from children and pass thru
-        const currNode = children.shift();
-        const { data } = currNode.toJSON();
-        if (currNode.hasChildren()) {
-          return {
-            data,
-            children: recurse(currNode.children)
-          };
-        } else {
-          // get back
-          return {
-            data
-          };
-        }
-      })(this.rootNode.children);
-    }
-    return json;
-    // TODO: strip js objects and represent as JSON
-    /*
-    return (function recurse(children) {
-      if (children.length) {
-        const currNode = children.shift();
-        console.log(currNode.data);
-        if(currNode.hasChildren()) {
-          if (currNode.children.length) {
-            return recurse(currNode.children);
+      this.json['children'] = (function recurse(kids) {
+        return kids.map(kid => {
+          const { data } = kid;
+          if (kid.hasChildren()) {
+            return {
+              data,
+              children: recurse(kid.children)
+            }
+          } else {
+            return {
+              data
+            };
           }
-        } else {
-          return JSON.stringify(currNode.data);
-        }
-      } else {
-        return null;
-      }
-    })(this.rootNode.children);
-    */
+        });
+      })(children);
+    }
+    return this.json;
   }
 }
 
@@ -173,6 +140,13 @@ module.exports = function(options) {
             if (rematch && rematch.length === 4) {
               let [ match, addr, name, ext ] = rematch;
               addr = addr.substring(0, addr.length - 1).split(delim);
+              name = utils.formatName(name, delim);
+              let contents = null;
+              fs.createReadStream(file)
+                .pipe(
+                  // TODO: how to pipe the input into a variable?
+                );
+              console.log(contents);
               // TODO: read content in file --> marked
               tree.add(addr, {
                 name,
@@ -183,14 +157,15 @@ module.exports = function(options) {
             }
           });
 
-          // console.log(nodeUtils.inspect(tree, { depth: null}));
-          utils.print(nodeUtils.inspect(tree.toJSON(), { depth: null }));
+          // console.log(nodeUtils.inspect(tree.toJSON(), { depth: null}));
 
           fs.writeFileSync(`./dist/${ outputFile }.js`, result, 'utf8');
           fs.createReadStream(`./src/${ indexFile }.html`)
             .pipe(fs.createWriteStream(`./dist/${ indexFile }.html`));
 
-          fs.writeFileSync(`./dist/${ outputFile }.content.js`, JSON.stringify(nodeUtils.inspect(tree, {depth: null})), 'utf8');
+          const contentJSON = `var contentJSON=${nodeUtils.inspect(tree.toJSON(), {depth: null})};`
+          
+          fs.writeFileSync(`./dist/${ outputFile }.content.js`, contentJSON, 'utf8');
 
           resolve();
         } catch (e) {

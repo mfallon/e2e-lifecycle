@@ -105,8 +105,11 @@ var spawn = require('child_process').spawn,
           fs.rmdirSync(path)
         }
       }
-
       return files
+    },
+    formatName(filename, delimiter) {
+      return filename;
+      // return //.replace();
     },
     /**
      * Delete synchronously any folder or file
