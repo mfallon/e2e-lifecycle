@@ -141,13 +141,16 @@ module.exports = function(options) {
               let [ match, addr, name, ext ] = rematch;
               addr = addr.substring(0, addr.length - 1).split(delim);
               name = utils.formatName(name, delim);
+              // TODO: read content in file --> marked
+              /*
               let contents = null;
               fs.createReadStream(file)
                 .pipe(
                   // TODO: how to pipe the input into a variable?
+                  console.log
                 );
               console.log(contents);
-              // TODO: read content in file --> marked
+              */
               tree.add(addr, {
                 name,
                 ext
