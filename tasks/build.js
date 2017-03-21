@@ -141,19 +141,16 @@ module.exports = function(options) {
               let [ match, addr, name, ext ] = rematch;
               addr = addr.substring(0, addr.length - 1).split(delim);
               name = utils.formatName(name, delim);
-              // TODO: read content in file --> marked
-              /*
-              let contents = null;
-              fs.createReadStream(file)
-                .pipe(
-                  // TODO: how to pipe the input into a variable?
-                  console.log
-                );
-              console.log(contents);
-              */
-              tree.add(addr, {
-                name,
-                ext
+              // TODO: these fileReads should be async only resolving when all have been read
+              fs.readFile(file, 'utf8', (err, data) => {
+                if (err) {
+                  throw err;
+                }
+                tree.add(addr, {
+                  name,
+                  content: JSON.stringify(marked(data)),
+                  ext
+                });
               });
             } else {
               utils.print(`Error: cannot match file ${ file }`, 'warning');
@@ -166,8 +163,8 @@ module.exports = function(options) {
           fs.createReadStream(`./src/${ indexFile }.html`)
             .pipe(fs.createWriteStream(`./dist/${ indexFile }.html`));
 
+          // TODO: should only write after all the fileReads have completed
           const contentJSON = `var contentJSON=${nodeUtils.inspect(tree.toJSON(), {depth: null})};`
-          
           fs.writeFileSync(`./dist/${ outputFile }.content.js`, contentJSON, 'utf8');
 
           resolve();
