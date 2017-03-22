@@ -5,7 +5,6 @@ const mkdirp = require('mkdirp');
 const babel = require('babel-core');
 const fs = require('fs');
 const marked = require('marked');
-// const JSON = require('json-serialize');
 
 // represent a branch or leaf
 class Node {
@@ -91,6 +90,52 @@ class Tree {
   }
 }
 
+// Queue implementation which will notify when all promises are resolved
+// callback should be what happens when all done
+
+class FileQueue {
+
+  constructor(callback) {
+    this.fs = require('fs');
+    this.tasks = [];
+    // what we do when all tasks have resolved
+    this.callback = callback;
+  }
+
+  // what to do when file is read/resolved
+  readFile(file, callback) {
+    this.tasks.push(
+      new Promise((resolve, reject) => {
+        try {
+          this.fs.readFile(file, 'utf8', (err, buffer) => {
+            if (err) {
+              reject(err);
+            } else {
+              // TODO: this is where you'd want to add it to the tree
+              resolve(buffer);
+            }
+          });
+        } catch(err) {
+          reject(err);
+        }
+      })
+      .then(buffer => {
+        // TODO: check to resolve whole queue?
+        console.log(this.tasks);
+        callback(buffer);
+      })
+      .catch(err => {
+        console.log(err);
+      })
+    );
+  }
+
+  checkResolved() {
+    // TODO: how to check that all the promises have resolved?
+    return this.tasks.every(task => task.status !== 'resolved');
+  }
+}
+
 module.exports = function(options) {
 
   // delete the old ./dist folder
@@ -133,6 +178,13 @@ module.exports = function(options) {
             name: 'ROOT'
           });
           const content = utils.listFiles(`${ dir }`, false);
+          const q = new FileQueue(resolve => {
+            // TODO: should only write after all the fileReads have completed
+            const contentJSON = `var contentJSON=${nodeUtils.inspect(tree.toJSON(), {depth: null})};`
+            fs.writeFileSync(`./dist/${ outputFile }.content.js`, contentJSON, 'utf8');
+            // resolve outer main resolve
+            resolve();
+          });
           // iterate over directory files
           content.forEach((file, index) => {
             // get address part of filename
@@ -142,16 +194,22 @@ module.exports = function(options) {
               addr = addr.substring(0, addr.length - 1).split(delim);
               name = utils.formatName(name, delim);
               // TODO: these fileReads should be async only resolving when all have been read
-              fs.readFile(file, 'utf8', (err, data) => {
-                if (err) {
-                  throw err;
-                }
+              // pass in function to add, but will args be preserved when taken out of scope?
+              q.readFile(file, data => {
+                // don't think my args will stay in scope here
                 tree.add(addr, {
                   name,
-                  content: JSON.stringify(marked(data)),
-                  ext
+                  ext,
+                  content: JSON.stringify(marked(data))
                 });
               });
+              /*
+              tree.add(addr, {
+                name,
+                content: JSON.stringify(marked(data)),
+                ext
+              });
+              */
             } else {
               utils.print(`Error: cannot match file ${ file }`, 'warning');
             }
@@ -163,11 +221,8 @@ module.exports = function(options) {
           fs.createReadStream(`./src/${ indexFile }.html`)
             .pipe(fs.createWriteStream(`./dist/${ indexFile }.html`));
 
-          // TODO: should only write after all the fileReads have completed
-          const contentJSON = `var contentJSON=${nodeUtils.inspect(tree.toJSON(), {depth: null})};`
-          fs.writeFileSync(`./dist/${ outputFile }.content.js`, contentJSON, 'utf8');
-
-          resolve();
+          // TODO: should not resolve until whole queue has processed
+          // resolve();
         } catch (e) {
           reject(e)
         }
