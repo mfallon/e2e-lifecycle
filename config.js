@@ -7,5 +7,6 @@ module.exports = {
     dir: './content',
     delim: '_',
     regEx: /([\d_]+)(\w+)\.(\w+)/
-  }
+  },
+  globalContent: 'contentJSON'
 }

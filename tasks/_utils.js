@@ -107,9 +107,12 @@ var spawn = require('child_process').spawn,
       }
       return files
     },
-    formatName(filename, delimiter) {
-      return filename;
-      // return //.replace();
+    capitalize(str, delim = ' ') {
+      return str.toLowerCase().split(delim)
+        .map(word => [
+          word.charAt(0).toUpperCase(),
+          word.substring(1)]
+          .join('')).join(' ');
     },
     /**
      * Delete synchronously any folder or file

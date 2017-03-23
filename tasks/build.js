@@ -91,48 +91,37 @@ class Tree {
 }
 
 // Queue implementation which will notify when all promises are resolved
-// callback should be what happens when all done
-
 class FileQueue {
-
-  constructor(callback) {
+  constructor() {
     this.fs = require('fs');
     this.tasks = [];
-    // what we do when all tasks have resolved
-    this.callback = callback;
   }
-
-  // what to do when file is read/resolved
   readFile(file, callback) {
     this.tasks.push(
       new Promise((resolve, reject) => {
         try {
-          this.fs.readFile(file, 'utf8', (err, buffer) => {
+          this.fs.readFile(file, 'utf8', (err, data) => {
             if (err) {
               reject(err);
             } else {
-              // TODO: this is where you'd want to add it to the tree
-              resolve(buffer);
+              resolve(data);
             }
           });
         } catch(err) {
           reject(err);
         }
       })
-      .then(buffer => {
-        // TODO: check to resolve whole queue?
-        console.log(this.tasks);
-        callback(buffer);
-      })
-      .catch(err => {
-        console.log(err);
+      .then(data => {
+        return callback(data);
+      }, err => {
+        // TODO: test the error
+        utils.print(`Error reading file ${ file }: ${ e }`, 'error');
+        return null;
       })
     );
   }
-
   checkResolved() {
-    // TODO: how to check that all the promises have resolved?
-    return this.tasks.every(task => task.status !== 'resolved');
+    return Promise.all(this.tasks);
   }
 }
 
@@ -142,7 +131,7 @@ module.exports = function(options) {
   utils.clean('./dist')
 
   /**
-   * Create a promise based on the result of the webpack compiling script
+   * Create a promise based on the mainAppCompileResult of the webpack compiling script
    */
 
   return new Promise(function(resolve, reject) {
@@ -155,7 +144,7 @@ module.exports = function(options) {
     }).then( function ( bundle ) {
 
       // convert to valid es5 code with babel
-      var result = babel.transform(
+      var mainAppCompileResult = babel.transform(
         // create a single bundle file
         bundle.generate({
           format: 'cjs'
@@ -167,24 +156,14 @@ module.exports = function(options) {
           presets: ['es2015'],
           plugins: ['transform-es2015-modules-umd']
         }
-      ).code
+      ).code;
 
       mkdirp('./dist', function() {
         try {
           // read content dir and create a sorted array based on filename convention
-          const { outputFile, indexFile } = global.config;
           const { dir, delim, regEx } = global.config.contentFile;
-          const tree = new Tree({
-            name: 'ROOT'
-          });
           const content = utils.listFiles(`${ dir }`, false);
-          const q = new FileQueue(resolve => {
-            // TODO: should only write after all the fileReads have completed
-            const contentJSON = `var contentJSON=${nodeUtils.inspect(tree.toJSON(), {depth: null})};`
-            fs.writeFileSync(`./dist/${ outputFile }.content.js`, contentJSON, 'utf8');
-            // resolve outer main resolve
-            resolve();
-          });
+          const q = new FileQueue();
           // iterate over directory files
           content.forEach((file, index) => {
             // get address part of filename
@@ -192,37 +171,66 @@ module.exports = function(options) {
             if (rematch && rematch.length === 4) {
               let [ match, addr, name, ext ] = rematch;
               addr = addr.substring(0, addr.length - 1).split(delim);
-              name = utils.formatName(name, delim);
-              // TODO: these fileReads should be async only resolving when all have been read
-              // pass in function to add, but will args be preserved when taken out of scope?
+              name = utils.capitalize(name, delim);
+              // add file to FileQueue, but check if resolved later
               q.readFile(file, data => {
-                // don't think my args will stay in scope here
-                tree.add(addr, {
+                return {
+                  addr,
                   name,
                   ext,
-                  content: JSON.stringify(marked(data))
-                });
+                  content: JSON.stringify(data)
+                }
               });
-              /*
-              tree.add(addr, {
-                name,
-                content: JSON.stringify(marked(data)),
-                ext
-              });
-              */
             } else {
               utils.print(`Error: cannot match file ${ file }`, 'warning');
             }
           });
 
-          // console.log(nodeUtils.inspect(tree.toJSON(), { depth: null}));
+          const { outputFile, indexFile, globalContent } = global.config;
 
-          fs.writeFileSync(`./dist/${ outputFile }.js`, result, 'utf8');
-          fs.createReadStream(`./src/${ indexFile }.html`)
-            .pipe(fs.createWriteStream(`./dist/${ indexFile }.html`));
+          // Instantiate tree data structure
+          const tree = new Tree({
+            name: 'ROOT'
+          });
 
-          // TODO: should not resolve until whole queue has processed
-          // resolve();
+          // Now ask q to return when all promises have fulfilled
+          q.checkResolved().then(
+            allFilesResolved => {
+              if (allFilesResolved.length) {
+                allFilesResolved.forEach(fileData => {
+                  const { addr, name, ext, content } = fileData; 
+                  tree.add(addr, {
+                    name,
+                    ext,
+                    content
+                  });
+                });
+
+
+                // now write files to output directory with content
+                const contentJSON = `var ${ globalContent }=${nodeUtils.inspect(tree.toJSON(), {depth: null})};`
+                fs.writeFileSync(`./dist/${ outputFile }.content.js`, contentJSON, 'utf8');
+
+                // resolve outer main resolve
+                fs.writeFileSync(`./dist/${ outputFile }.js`, mainAppCompileResult, 'utf8');
+                fs.createReadStream(`./src/${ indexFile }.html`)
+                  .pipe(fs.createWriteStream(`./dist/${ indexFile }.html`));
+
+                utils.print('Finished compiling files!', 'confirm');
+                resolve();
+
+              } else {
+                utils.print('no files to process!', 'warn');
+              }
+            }, 
+            rejected => {
+              utils.print(`Encountered error reading files ${ rejected }`, 'error');
+            }
+          ).catch(rejected => {
+            utils.print(`Encountered error reading files ${ rejected }`, 'error');
+          });
+
+
         } catch (e) {
           reject(e)
         }
