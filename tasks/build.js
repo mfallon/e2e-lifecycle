@@ -210,6 +210,14 @@ module.exports = function(options) {
                 // now write files to output directory with content
                 const contentJSON = `var ${ globalContent }=${nodeUtils.inspect(tree.toJSON(), {depth: null})};`
                 fs.writeFileSync(`./dist/${ outputFile }.content.js`, contentJSON, 'utf8');
+                
+                // TODO: explore how to bundle this lib rather than this straight copy
+                // will only need certain modules out of d3 lib
+                // pull d3 library into export dir
+                mkdirp('./dist/lib', () => {
+                  fs.createReadStream('./tools/d3/d3.js')
+                    .pipe(fs.createWriteStream('./dist/lib/d3.js'));
+                });
 
                 // resolve outer main resolve
                 fs.writeFileSync(`./dist/${ outputFile }.js`, mainAppCompileResult, 'utf8');
