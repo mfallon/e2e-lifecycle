@@ -8,5 +8,6 @@ module.exports = {
     delim: '_',
     regEx: /([\d_]+)(\w+)\.(\w+)/
   },
-  globalContent: 'contentJSON'
+  globalContent: 'contentJSON',
+  d3version: '3.5.17'
 }

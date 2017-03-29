@@ -67,20 +67,24 @@ class Tree {
   toJSON() {
     const { data, children } = this.rootNode;
     this.json = {
-      data
+      name: data.name,
+      props: data
     };
     if (children.length) {
       this.json['children'] = (function recurse(kids) {
         return kids.map(kid => {
           const { data } = kid;
+          const { name } = data;
           if (kid.hasChildren()) {
             return {
-              data,
+              name,
+              props: data,
               children: recurse(kid.children)
             }
           } else {
             return {
-              data
+              name,
+              props: data
             };
           }
         });
@@ -186,7 +190,7 @@ module.exports = function(options) {
             }
           });
 
-          const { outputFile, indexFile, globalContent } = global.config;
+          const { outputFile, indexFile, globalContent, d3version } = global.config;
 
           // Instantiate tree data structure
           const tree = new Tree({
@@ -214,8 +218,9 @@ module.exports = function(options) {
                 // TODO: explore how to bundle this lib rather than this straight copy
                 // will only need certain modules out of d3 lib
                 // pull d3 library into export dir
+                // rollup is already being used for this
                 mkdirp('./dist/lib', () => {
-                  fs.createReadStream('./tools/d3/d3.js')
+                  fs.createReadStream(`./tools/d3/d3.v${d3version}.js`)
                     .pipe(fs.createWriteStream('./dist/lib/d3.js'));
                 });
 
