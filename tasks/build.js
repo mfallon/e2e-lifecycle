@@ -66,8 +66,9 @@ class Tree {
 
   toJSON() {
     const { data, children } = this.rootNode;
+    const { name } = data;
     this.json = {
-      name: data.name,
+      name,
       props: data
     };
     if (children.length) {
