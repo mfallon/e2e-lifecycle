@@ -73,7 +73,7 @@ class Tree {
       props: data
     };
     if (children.length) {
-      this.json['children'] = (function recurse(kids) {
+      this.json.children = (function recurse(kids) {
         return kids.map(kid => {
           const { data } = kid;
           const { name } = data;
@@ -113,7 +113,7 @@ class FileQueue {
               resolve(data);
             }
           });
-        } catch(err) {
+        } catch (err) {
           reject(err);
         }
       })
@@ -134,21 +134,19 @@ class FileQueue {
 module.exports = function(options) {
 
   // delete the old ./dist folder
-  utils.clean('./dist')
+  utils.clean('./dist');
 
   /**
    * Create a promise based on the mainAppCompileResult of the webpack compiling script
    */
 
   return new Promise(function(resolve, reject) {
-
     rollup.rollup({
       // The bundle's starting point. This file will be
       // included, along with the minimum necessary code
       // from its dependencies
       entry: `./src/js/${ global.config.inputFile }.js`
     }).then( function ( bundle ) {
-
       // convert to valid es5 code with babel
       var mainAppCompileResult = babel.transform(
         // create a single bundle file
@@ -204,7 +202,7 @@ module.exports = function(options) {
             allFilesResolved => {
               if (allFilesResolved.length) {
                 allFilesResolved.forEach(fileData => {
-                  const { addr, name, ext, content } = fileData; 
+                  const { addr, name, ext, content } = fileData;
                   tree.add(addr, {
                     name,
                     ext,
@@ -212,11 +210,10 @@ module.exports = function(options) {
                   });
                 });
 
-
                 // now write files to output directory with content
                 const contentJSON = `var ${ globalContent }=${nodeUtils.inspect(tree.toJSON(), {depth: null})};`
                 fs.writeFileSync(`./dist/${ outputFile }.content.js`, contentJSON, 'utf8');
-                
+
                 // TODO: explore how to bundle this lib rather than this straight copy
                 // will only need certain modules out of d3 lib
                 // pull d3 library into export dir
@@ -232,7 +229,7 @@ module.exports = function(options) {
                   sass.render({
                     file: `./src/scss/${ inputFile }.scss`,
                     outFile: `./dist/css/${ outputFile }.css`,
-                    outputStyle: 'nested',
+                    outputStyle: 'nested'
                   }, (error, result) => {
                     if (error) {
                       utils.print(error.status, 'error');
@@ -262,21 +259,17 @@ module.exports = function(options) {
               } else {
                 utils.print('no files to process!', 'warn');
               }
-            }, 
+            },
             rejected => {
               utils.print(`Encountered error reading files ${ rejected }`, 'error');
             }
           ).catch(rejected => {
             utils.print(`Encountered error reading files ${ rejected }`, 'error');
           });
-
-
         } catch (e) {
           reject(e)
         }
       })
-
     }).catch(e =>{ utils.print(e, 'error') })
   })
-
 }
