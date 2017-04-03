@@ -5,6 +5,7 @@ const mkdirp = require('mkdirp');
 const babel = require('babel-core');
 const fs = require('fs');
 const marked = require('marked');
+const sass = require('node-sass');
 
 // represent a branch or leaf
 class Node {
@@ -191,7 +192,7 @@ module.exports = function(options) {
             }
           });
 
-          const { outputFile, indexFile, globalContent, d3version } = global.config;
+          const { inputFile, outputFile, indexFile, globalContent, d3version } = global.config;
 
           // Instantiate tree data structure
           const tree = new Tree({
@@ -223,6 +224,31 @@ module.exports = function(options) {
                 mkdirp('./dist/lib', () => {
                   fs.createReadStream(`./tools/d3/d3.v${d3version}.js`)
                     .pipe(fs.createWriteStream('./dist/lib/d3.js'));
+                });
+
+                // SCSS build
+                // node-sass --include-path scss src/scss/app.scss dist/css/app.scss
+                mkdirp('./dist/css', () => {
+                  sass.render({
+                    file: `./src/scss/${ inputFile }.scss`,
+                    outFile: `./dist/css/${ outputFile }.css`,
+                    outputStyle: 'nested',
+                  }, (error, result) => {
+                    if (error) {
+                      utils.print(error.status, 'error');
+                      utils.print(error.column, 'error');
+                      utils.print(error.message, 'error');
+                      utils.print(error.line, 'error');
+                    } else {
+                      fs.writeFile(`./dist/css/${ outputFile }.css`, result.css, (err) => {
+                        if (err) {
+                          utils.print('css file could not be written to disk', 'error');
+                        } else {
+                          utils.print(`css file written to ./dist/css/${ outputFile }.css`, 'error');
+                        }
+                      });
+                    }
+                  });
                 });
 
                 // resolve outer main resolve
