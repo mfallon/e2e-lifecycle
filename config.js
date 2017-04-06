@@ -9,5 +9,5 @@ module.exports = {
     regEx: /([\d_]+)(\w+)\.(\w+)/
   },
   globalContent: 'contentJSON',
-  d3version: '4.7.4'
+  d3version: '3.3.9'
 }

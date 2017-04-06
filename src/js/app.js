@@ -12,10 +12,12 @@ class App {
 
   setupNodeTree() {
 
+    // d3 v3 
     let margin = {top: 20, right: 120, bottom: 20, left: 120},
       w = 1024 - margin.left - margin.right,
       h = 2000 - margin.top - margin.bottom,
-      duration = 750;
+      duration = 750,
+      i = 0;
 
     this.svg = d3.select(document.body).append('svg')
       .attr('width', w + margin.right + margin.left)
@@ -26,15 +28,16 @@ class App {
     this.tree = d3.tree()
       .size([h, w]);
 
-    const diagonal = d => (
-      `M${d.y},${d.x}C${((d.y + d.parent.y)/2)},${d.x} ${((d.y + d.parent.y)/2)},${d.parent.x} ${d.parent.y},${d.parent.x}`
-    );
+    let diagonal = d3.svg.diagonal()
+      .projection(d => ([d.y, d.x]));
 
     this.updateNodeTree();
 
+
     /*
-    let diagonal = d3.svg.diagonal()
-      .projection(d => ([d.y, d.x]));
+    const diagonal = d => (
+      `M${d.y},${d.x}C${((d.y + d.parent.y)/2)},${d.x} ${((d.y + d.parent.y)/2)},${d.parent.x} ${d.parent.y},${d.parent.x}`
+    );
 
     let link = g.selectAll('.link')
       .data(tree(this.root).descendants().slice(1))
